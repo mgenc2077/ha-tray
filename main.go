@@ -42,7 +42,27 @@ func main() {
 		desk.SetSystemTrayMenu(m)
 	}
 
-	w.SetContent(widget.NewLabel("Fyne System Tray"))
+	haURLEntry := widget.NewEntry()
+	haURLEntry.SetText(config.HaURL)
+
+	haTokenEntry := widget.NewPasswordEntry()
+	haTokenEntry.SetText(config.HaToken)
+
+	form := widget.NewForm(
+		widget.NewFormItem("HA URL", haURLEntry),
+		widget.NewFormItem("HA Token", haTokenEntry),
+	)
+	form.SubmitText = "Save"
+	form.OnSubmit = func() {
+		config.HaURL = haURLEntry.Text
+		config.HaToken = haTokenEntry.Text
+
+		log.Println("New config:")
+		log.Println("HA URL:", config.HaURL)
+		log.Println("HA Token:", config.HaToken)
+	}
+
+	w.SetContent(form)
 	w.SetCloseIntercept(func() {
 		w.Hide()
 	})
