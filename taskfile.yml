@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+# To use deploy-win task on the Windows server install open-ssh server from github and enable it.
+# Start-Service sshd
+# Set-Service -Name sshd -StartupType 'Automatic'
+# Open the firewall port
+# New-NetFirewallRule -Name sshd -DisplayName 'Allow SSH' -Enabled True -Direction Inbound -Protocol TCP -LocalPort 22
+
+vars:
+  WIN_SERVER: "mgenc@192.168.1.103" # Update with your IP/Hostname
+  REMOTE_PATH: "C:/projects/Home-assistant-tray/"
+
+tasks:
+  default:
+    desc: Print a greeting message
+    cmds:
+      - echo "{{.GREETING}}"
+    silent: true
+
+  run:
+    desc: Run the application
+    cmds:
+      - go run .
+  
+  build-win:
+    desc: Build the application for Windows using Docker/Fyne-Cross
+    cmds:
+      - fyne-cross windows --app-id="com.mgenc.hatray"
+
+  deploy-win:
+    desc: Deploy the application to the remote server
+    silent: true
+    cmds:
+      - echo "Deploying to {{.WIN_SERVER}}"
+      - fyne-cross windows
+      - scp fyne-cross/dist/windows-amd64/ha-tray.exe.zip {{.WIN_SERVER}}:{{.REMOTE_PATH}}
+      - scp .env {{.WIN_SERVER}}:{{.REMOTE_PATH}}
+      - ssh {{.WIN_SERVER}} "powershell -Command \"Stop-Process -Name ha-tray -ErrorAction SilentlyContinue\""
+      - ssh {{.WIN_SERVER}} "powershell -Command \"Expand-Archive -Path {{.REMOTE_PATH}}ha-tray.exe.zip -DestinationPath {{.REMOTE_PATH}} -Force\""
+      - ssh {{.WIN_SERVER}} "powershell -Command \"Remove-Item {{.REMOTE_PATH}}ha-tray.exe.zip\""
+      - echo "Deploy Complete"
+      - echo "Starting application..."
+      - ssh {{.WIN_SERVER}} "powershell -Command \"Start-Process {{.REMOTE_PATH}}ha-tray.exe\""
+      - echo "Done"
