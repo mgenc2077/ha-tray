@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -9,6 +10,13 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/joho/godotenv"
 )
+
+type AppConfig struct {
+	HaURL   string
+	HaToken string
+}
+
+var config AppConfig
 
 func main() {
 	a := app.New()
@@ -19,6 +27,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	config.HaURL = os.Getenv("haURL")
+	config.HaToken = os.Getenv("haToken")
 
 	if desk, ok := a.(desktop.App); ok {
 		m := fyne.NewMenu("HA Tray",

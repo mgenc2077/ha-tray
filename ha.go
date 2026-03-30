@@ -6,16 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
 
 // toggleEntity toggles the state of a given Home Assistant entity using the REST API.
 func toggleEntity(entityID string) error {
 
-	haURL := os.Getenv("haURL")
-	haToken := os.Getenv("haToken")
-
-	url := fmt.Sprintf("%s/api/services/homeassistant/toggle", haURL)
+	url := fmt.Sprintf("%s/api/services/homeassistant/toggle", config.HaURL)
 
 	payload := map[string]string{
 		"entity_id": entityID,
@@ -30,7 +26,7 @@ func toggleEntity(entityID string) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+haToken)
+	req.Header.Set("Authorization", "Bearer "+config.HaToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
