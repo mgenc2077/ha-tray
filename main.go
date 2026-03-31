@@ -99,7 +99,38 @@ func main() {
 	haTokenEntry.OnChanged = debounceSave
 
 	deviceBtn := widget.NewButton("Devices", func() {
+		done := make(chan struct{})
+		var loadingDialog dialog.Dialog
+
+		// Trigger loading animation if discovery is slow
+		time.AfterFunc(500*time.Millisecond, func() {
+			select {
+			case <-done:
+			default:
+				fyne.Do(func() {
+					select {
+					case <-done:
+					default:
+						activity := widget.NewActivity()
+						activity.Start()
+						content := container.NewPadded(activity)
+						loadingDialog = dialog.NewCustomWithoutButtons("Connecting to HA...", content, w)
+						loadingDialog.Show()
+					}
+				})
+			}
+		})
+
 		go func() {
+			defer func() {
+				close(done)
+				fyne.Do(func() {
+					if loadingDialog != nil {
+						loadingDialog.Hide()
+					}
+				})
+			}()
+
 			entities, err := discovery()
 			if err != nil {
 				fyne.Do(func() {
