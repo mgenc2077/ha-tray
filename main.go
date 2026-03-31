@@ -23,7 +23,7 @@ var config AppConfig
 func main() {
 	a := app.New()
 	w := a.NewWindow("HA Tray")
-	w.Resize(fyne.NewSize(1200, 800))
+	w.Resize(fyne.NewSize(1000, 200))
 
 	// Load .env file
 	err := godotenv.Load()
@@ -97,13 +97,38 @@ func main() {
 				}
 			},
 		)
+
+		table.ShowHeaderRow = true
+		table.CreateHeader = func() fyne.CanvasObject {
+			return widget.NewLabel("Header Placeholder")
+		}
+		table.UpdateHeader = func(id widget.TableCellID, obj fyne.CanvasObject) {
+			lbl := obj.(*widget.Label)
+			switch id.Col {
+			case 0:
+				lbl.SetText("Entities")
+			case 1:
+				lbl.SetText("State")
+			case 2:
+				lbl.SetText("Enabled")
+			default:
+				lbl.SetText("")
+			}
+		}
+
+		originalSize := w.Canvas().Size()
+		w.Resize(fyne.NewSize(1000, 800))
 		table.SetColumnWidth(0, 400)
 		table.SetColumnWidth(1, 300)
 		table.SetColumnWidth(2, 50)
 
 		tableContainer := container.NewGridWrap(fyne.NewSize(800, 600), table)
 
-		dialog.ShowCustom("Discovered Devices", "Close", tableContainer, w)
+		d := dialog.NewCustom("Discovered Devices", "Close", tableContainer, w)
+		d.SetOnClosed(func() {
+			w.Resize(originalSize)
+		})
+		d.Show()
 	})
 
 	w.SetContent(container.NewVBox(form, deviceBtn))
