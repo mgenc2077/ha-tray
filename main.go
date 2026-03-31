@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -78,15 +79,24 @@ func main() {
 		widget.NewFormItem("HA URL", haURLEntry),
 		widget.NewFormItem("HA Token", haTokenEntry),
 	)
-	form.SubmitText = "Save"
-	form.OnSubmit = func() {
-		config.HaURL = haURLEntry.Text
-		config.HaToken = haTokenEntry.Text
+	var debounceTimer *time.Timer
+	debounceSave := func(s string) {
+		if debounceTimer != nil {
+			debounceTimer.Stop()
+		}
+		// Uses a long debounce (2 seconds) before triggering the save logic
+		debounceTimer = time.AfterFunc(500*time.Millisecond, func() {
+			config.HaURL = haURLEntry.Text
+			config.HaToken = haTokenEntry.Text
 
-		log.Println("New config:")
-		log.Println("HA URL:", config.HaURL)
-		log.Println("HA Token:", config.HaToken)
+			log.Println("New config:")
+			log.Println("HA URL:", config.HaURL)
+			log.Println("HA Token:", config.HaToken)
+		})
 	}
+
+	haURLEntry.OnChanged = debounceSave
+	haTokenEntry.OnChanged = debounceSave
 
 	deviceBtn := widget.NewButton("Devices", func() {
 		go func() {
