@@ -23,6 +23,7 @@ var config AppConfig
 func main() {
 	a := app.New()
 	w := a.NewWindow("HA Tray")
+	w.Resize(fyne.NewSize(1200, 800))
 
 	// Load .env file
 	err := godotenv.Load()
@@ -96,11 +97,11 @@ func main() {
 				}
 			},
 		)
-		table.SetColumnWidth(0, 300)
-		table.SetColumnWidth(1, 100)
+		table.SetColumnWidth(0, 400)
+		table.SetColumnWidth(1, 300)
 		table.SetColumnWidth(2, 50)
 
-		tableContainer := container.NewGridWrap(fyne.NewSize(500, 400), table)
+		tableContainer := container.NewGridWrap(fyne.NewSize(800, 600), table)
 
 		dialog.ShowCustom("Discovered Devices", "Close", tableContainer, w)
 	})
