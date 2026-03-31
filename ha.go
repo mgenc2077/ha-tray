@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -90,10 +91,10 @@ func toggleEntityWs(entityID string) error {
 	}
 
 	callServiceMsg := map[string]interface{}{
-		"id":           1,
-		"type":         "call_service",
-		"domain":       "homeassistant",
-		"service":      "toggle",
+		"id":      1,
+		"type":    "call_service",
+		"domain":  "homeassistant",
+		"service": "toggle",
 		"service_data": map[string]interface{}{
 			"entity_id": entityID,
 		},
@@ -110,6 +111,53 @@ func toggleEntityWs(entityID string) error {
 	if msg["type"] != "result" || msg["success"] != true {
 		return fmt.Errorf("call_service failed: %v", msg)
 	}
+
+	return nil
+}
+
+// discovery fetches all available entities from Home Assistant and logs them.
+func discovery() error {
+	url := fmt.Sprintf("%s/api/states", config.HaURL)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+config.HaToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected status code: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var states []struct {
+		EntityID string `json:"entity_id"`
+		State    string `json:"state"`
+	}
+	if err := json.Unmarshal(body, &states); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	log.Println("--- Home Assistant Entities ---")
+	for _, s := range states {
+		log.Printf("Entity: %s | State: %s", s.EntityID, s.State)
+	}
+	log.Printf("Total entities discovered: %d", len(states))
+	log.Println("-------------------------------")
 
 	return nil
 }
