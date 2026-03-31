@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"os"
@@ -16,12 +17,41 @@ import (
 )
 
 type AppConfig struct {
-	HaURL           string
-	HaToken         string
-	EnabledEntities map[string]bool
+	HaURL           string          `json:"ha_url"`
+	HaToken         string          `json:"ha_token"`
+	EnabledEntities map[string]bool `json:"enabled_entities"`
 }
 
 var config AppConfig
+
+func loadConfig() {
+	config.EnabledEntities = make(map[string]bool)
+
+	_ = godotenv.Load()
+	if envURL := os.Getenv("haURL"); envURL != "" {
+		config.HaURL = envURL
+	}
+	if envToken := os.Getenv("haToken"); envToken != "" {
+		config.HaToken = envToken
+	}
+
+	data, err := os.ReadFile("config.json")
+	if err == nil {
+		_ = json.Unmarshal(data, &config)
+	} else if os.IsNotExist(err) {
+		saveConfig()
+	}
+	if config.EnabledEntities == nil {
+		config.EnabledEntities = make(map[string]bool)
+	}
+}
+
+func saveConfig() {
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err == nil {
+		os.WriteFile("config.json", data, 0644)
+	}
+}
 
 func updateTrayMenu(desk desktop.App, w fyne.Window) {
 	m := fyne.NewMenu("HA Tray",
@@ -53,20 +83,11 @@ func updateTrayMenu(desk desktop.App, w fyne.Window) {
 }
 
 func main() {
-	config.EnabledEntities = make(map[string]bool)
+	loadConfig()
 
 	a := app.New()
 	w := a.NewWindow("HA Tray")
 	w.Resize(fyne.NewSize(1000, 200))
-
-	// Load .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	config.HaURL = os.Getenv("haURL")
-	config.HaToken = os.Getenv("haToken")
 
 	var desk desktop.App
 	var okDesk bool
@@ -89,7 +110,7 @@ func main() {
 		if debounceTimer != nil {
 			debounceTimer.Stop()
 		}
-		// Uses a long debounce (2 seconds) before triggering the save logic
+		// Uses a short debounce (500ms) before triggering the save logic
 		debounceTimer = time.AfterFunc(500*time.Millisecond, func() {
 			config.HaURL = haURLEntry.Text
 			config.HaToken = haTokenEntry.Text
@@ -97,6 +118,7 @@ func main() {
 			log.Println("New config:")
 			log.Println("HA URL:", config.HaURL)
 			log.Println("HA Token:", config.HaToken)
+			saveConfig()
 		})
 	}
 
@@ -175,7 +197,12 @@ func main() {
 							eID := entities[id.Row].EntityID
 							chk.Checked = config.EnabledEntities[eID]
 							chk.OnChanged = func(checked bool) {
-								config.EnabledEntities[eID] = checked
+								if checked {
+									config.EnabledEntities[eID] = true
+								} else {
+									delete(config.EnabledEntities, eID)
+								}
+								saveConfig()
 								if okDesk {
 									updateTrayMenu(desk, w)
 								}
