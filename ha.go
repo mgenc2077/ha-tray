@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -33,7 +34,7 @@ func toggleEntity(entityID string) error {
 	req.Header.Set("Authorization", "Bearer "+config.HaToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to execute request: %w", err)
@@ -58,7 +59,8 @@ func toggleEntityWs(entityID string) error {
 	}
 	wsURL += "api/websocket"
 
-	c, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	dialer := &websocket.Dialer{HandshakeTimeout: 5 * time.Second}
+	c, _, err := dialer.Dial(wsURL, nil)
 	if err != nil {
 		return fmt.Errorf("websocket dial error: %w", err)
 	}
@@ -133,7 +135,7 @@ func discovery() ([]HAEntity, error) {
 	req.Header.Set("Authorization", "Bearer "+config.HaToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)

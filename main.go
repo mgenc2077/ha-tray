@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"os"
 
@@ -28,7 +29,9 @@ func updateTrayMenu(desk desktop.App, w fyne.Window) {
 		}))
 
 	m.Items = append(m.Items, fyne.NewMenuItem("Discovery", func() {
-		_, _ = discovery()
+		go func() {
+			_, _ = discovery()
+		}()
 	}))
 
 	for entityID, enabled := range config.EnabledEntities {
@@ -86,83 +89,89 @@ func main() {
 	}
 
 	deviceBtn := widget.NewButton("Devices", func() {
-		entities, err := discovery()
-		if err != nil {
-			dialog.ShowError(err, w)
-			return
-		}
-
-		table := widget.NewTable(
-			func() (int, int) {
-				return len(entities), 3
-			},
-			func() fyne.CanvasObject {
-				return container.NewStack(
-					widget.NewLabel("Wide Content Placeholder"),
-					widget.NewCheck("", nil),
-				)
-			},
-			func(id widget.TableCellID, obj fyne.CanvasObject) {
-				stack := obj.(*fyne.Container)
-				lbl := stack.Objects[0].(*widget.Label)
-				chk := stack.Objects[1].(*widget.Check)
-
-				switch id.Col {
-				case 0:
-					chk.Hide()
-					lbl.Show()
-					lbl.SetText(entities[id.Row].EntityID)
-				case 1:
-					chk.Hide()
-					lbl.Show()
-					lbl.SetText(entities[id.Row].State)
-				case 2:
-					lbl.Hide()
-					chk.Show()
-					eID := entities[id.Row].EntityID
-					chk.Checked = config.EnabledEntities[eID]
-					chk.OnChanged = func(checked bool) {
-						config.EnabledEntities[eID] = checked
-						if okDesk {
-							updateTrayMenu(desk, w)
-						}
-					}
-					chk.Refresh()
-				}
-			},
-		)
-
-		table.ShowHeaderRow = true
-		table.CreateHeader = func() fyne.CanvasObject {
-			return widget.NewLabel("Header Placeholder")
-		}
-		table.UpdateHeader = func(id widget.TableCellID, obj fyne.CanvasObject) {
-			lbl := obj.(*widget.Label)
-			switch id.Col {
-			case 0:
-				lbl.SetText("Entities")
-			case 1:
-				lbl.SetText("State")
-			case 2:
-				lbl.SetText("Enabled")
-			default:
-				lbl.SetText("")
+		go func() {
+			entities, err := discovery()
+			if err != nil {
+				fyne.Do(func() {
+					dialog.ShowError(errors.New("cant connect to home assistant"), w)
+				})
+				return
 			}
-		}
 
-		originalSize := w.Canvas().Size()
-		w.Resize(fyne.NewSize(1000, 800))
-		table.SetColumnWidth(0, 400)
-		table.SetColumnWidth(1, 300)
-		table.SetColumnWidth(2, 50)
+			fyne.Do(func() {
+				table := widget.NewTable(
+					func() (int, int) {
+						return len(entities), 3
+					},
+					func() fyne.CanvasObject {
+						return container.NewStack(
+							widget.NewLabel("Wide Content Placeholder"),
+							widget.NewCheck("", nil),
+						)
+					},
+					func(id widget.TableCellID, obj fyne.CanvasObject) {
+						stack := obj.(*fyne.Container)
+						lbl := stack.Objects[0].(*widget.Label)
+						chk := stack.Objects[1].(*widget.Check)
 
-		tableContainer := container.NewGridWrap(fyne.NewSize(800, 600), table)
+						switch id.Col {
+						case 0:
+							chk.Hide()
+							lbl.Show()
+							lbl.SetText(entities[id.Row].EntityID)
+						case 1:
+							chk.Hide()
+							lbl.Show()
+							lbl.SetText(entities[id.Row].State)
+						case 2:
+							lbl.Hide()
+							chk.Show()
+							eID := entities[id.Row].EntityID
+							chk.Checked = config.EnabledEntities[eID]
+							chk.OnChanged = func(checked bool) {
+								config.EnabledEntities[eID] = checked
+								if okDesk {
+									updateTrayMenu(desk, w)
+								}
+							}
+							chk.Refresh()
+						}
+					},
+				)
 
-		d := dialog.NewCustom("Discovered Devices", "Close", tableContainer, w)
-		d.SetOnClosed(func() {
-			w.Resize(originalSize)
-		})
-		d.Show()
+				table.ShowHeaderRow = true
+				table.CreateHeader = func() fyne.CanvasObject {
+					return widget.NewLabel("Header Placeholder")
+				}
+				table.UpdateHeader = func(id widget.TableCellID, obj fyne.CanvasObject) {
+					lbl := obj.(*widget.Label)
+					switch id.Col {
+					case 0:
+						lbl.SetText("Entities")
+					case 1:
+						lbl.SetText("State")
+					case 2:
+						lbl.SetText("Enabled")
+					default:
+						lbl.SetText("")
+					}
+				}
+
+				originalSize := w.Canvas().Size()
+				w.Resize(fyne.NewSize(1000, 800))
+				table.SetColumnWidth(0, 400)
+				table.SetColumnWidth(1, 300)
+				table.SetColumnWidth(2, 50)
+
+				tableContainer := container.NewGridWrap(fyne.NewSize(800, 600), table)
+
+				d := dialog.NewCustom("Discovered Devices", "Close", tableContainer, w)
+				d.SetOnClosed(func() {
+					w.Resize(originalSize)
+				})
+				d.Show()
+			})
+		}()
 	})
 
 	w.SetContent(container.NewVBox(form, deviceBtn))
