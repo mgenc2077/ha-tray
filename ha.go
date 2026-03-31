@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 // toggleEntity toggles the state of a given Home Assistant entity using the REST API.
@@ -39,6 +42,73 @@ func toggleEntity(entityID string) error {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("unexpected status code: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// toggleEntityWs toggles the state of a given Home Assistant entity using the WebSocket API.
+func toggleEntityWs(entityID string) error {
+
+	wsURL := strings.Replace(config.HaURL, "http://", "ws://", 1)
+	wsURL = strings.Replace(wsURL, "https://", "wss://", 1)
+	if !strings.HasSuffix(wsURL, "/") {
+		wsURL += "/"
+	}
+	wsURL += "api/websocket"
+
+	c, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		return fmt.Errorf("websocket dial error: %w", err)
+	}
+	defer c.Close()
+
+	var msg map[string]interface{}
+	err = c.ReadJSON(&msg)
+	if err != nil {
+		return fmt.Errorf("failed to read auth_required message: %w", err)
+	}
+	if msg["type"] != "auth_required" {
+		return fmt.Errorf("expected auth_required, got: %v", msg["type"])
+	}
+
+	authMsg := map[string]interface{}{
+		"type":         "auth",
+		"access_token": config.HaToken,
+	}
+	err = c.WriteJSON(authMsg)
+	if err != nil {
+		return fmt.Errorf("failed to send auth message: %w", err)
+	}
+
+	err = c.ReadJSON(&msg)
+	if err != nil {
+		return fmt.Errorf("failed to read auth response: %w", err)
+	}
+	if msg["type"] != "auth_ok" {
+		return fmt.Errorf("authentication failed: %v", msg)
+	}
+
+	callServiceMsg := map[string]interface{}{
+		"id":           1,
+		"type":         "call_service",
+		"domain":       "homeassistant",
+		"service":      "toggle",
+		"service_data": map[string]interface{}{
+			"entity_id": entityID,
+		},
+	}
+	err = c.WriteJSON(callServiceMsg)
+	if err != nil {
+		return fmt.Errorf("failed to send call_service message: %w", err)
+	}
+
+	err = c.ReadJSON(&msg)
+	if err != nil {
+		return fmt.Errorf("failed to read call_service result: %w", err)
+	}
+	if msg["type"] != "result" || msg["success"] != true {
+		return fmt.Errorf("call_service failed: %v", msg)
 	}
 
 	return nil

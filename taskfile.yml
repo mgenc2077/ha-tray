@@ -13,12 +13,6 @@ vars:
   REMOTE_PATH: "C:/projects/Home-assistant-tray/"
 
 tasks:
-  default:
-    desc: Print a greeting message
-    cmds:
-      - echo "{{.GREETING}}"
-    silent: true
-
   run:
     desc: Run the application
     cmds:
@@ -27,7 +21,7 @@ tasks:
   build-win:
     desc: Build the application for Windows using Docker/Fyne-Cross
     cmds:
-      - fyne-cross windows --app-id="com.mgenc.hatray"
+      - fyne-cross windows
 
   deploy-win:
     desc: Deploy the application to the remote server

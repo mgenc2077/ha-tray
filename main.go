@@ -39,6 +39,9 @@ func main() {
 		m.Items = append(m.Items, fyne.NewMenuItem("Office Light", func() {
 			toggleEntity("switch.cata_ct_4010_akilli_priz_socket_1")
 		}))
+		m.Items = append(m.Items, fyne.NewMenuItem("Office Light(ws)", func() {
+			toggleEntityWs("switch.cata_ct_4010_akilli_priz_socket_1")
+		}))
 		desk.SetSystemTrayMenu(m)
 	}
 
