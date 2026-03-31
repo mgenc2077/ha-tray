@@ -6,6 +6,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/joho/godotenv"
@@ -43,7 +45,7 @@ func main() {
 			toggleEntityWs("switch.cata_ct_4010_akilli_priz_socket_1")
 		}))
 		m.Items = append(m.Items, fyne.NewMenuItem("Discovery", func() {
-			discovery()
+			_, _ = discovery()
 		}))
 		desk.SetSystemTrayMenu(m)
 	}
@@ -68,7 +70,42 @@ func main() {
 		log.Println("HA Token:", config.HaToken)
 	}
 
-	w.SetContent(form)
+	deviceBtn := widget.NewButton("Devices", func() {
+		entities, err := discovery()
+		if err != nil {
+			dialog.ShowError(err, w)
+			return
+		}
+
+		table := widget.NewTable(
+			func() (int, int) {
+				return len(entities), 3
+			},
+			func() fyne.CanvasObject {
+				return widget.NewLabel("Wide Content Placeholder")
+			},
+			func(id widget.TableCellID, obj fyne.CanvasObject) {
+				lbl := obj.(*widget.Label)
+				switch id.Col {
+				case 0:
+					lbl.SetText(entities[id.Row].EntityID)
+				case 1:
+					lbl.SetText(entities[id.Row].State)
+				default:
+					lbl.SetText("") // "enabled" column placeholder
+				}
+			},
+		)
+		table.SetColumnWidth(0, 300)
+		table.SetColumnWidth(1, 100)
+		table.SetColumnWidth(2, 50)
+
+		tableContainer := container.NewGridWrap(fyne.NewSize(500, 400), table)
+
+		dialog.ShowCustom("Discovered Devices", "Close", tableContainer, w)
+	})
+
+	w.SetContent(container.NewVBox(form, deviceBtn))
 	w.SetCloseIntercept(func() {
 		w.Hide()
 	})

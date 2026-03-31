@@ -115,13 +115,19 @@ func toggleEntityWs(entityID string) error {
 	return nil
 }
 
-// discovery fetches all available entities from Home Assistant and logs them.
-func discovery() error {
+// HAEntity represents a single Home Assistant entity
+type HAEntity struct {
+	EntityID string `json:"entity_id"`
+	State    string `json:"state"`
+}
+
+// discovery fetches all available entities from Home Assistant and returns them.
+func discovery() ([]HAEntity, error) {
 	url := fmt.Sprintf("%s/api/states", config.HaURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+config.HaToken)
@@ -130,34 +136,26 @@ func discovery() error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("unexpected status code: %d, response: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("unexpected status code: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	var states []struct {
-		EntityID string `json:"entity_id"`
-		State    string `json:"state"`
-	}
+	var states []HAEntity
 	if err := json.Unmarshal(body, &states); err != nil {
-		return fmt.Errorf("failed to unmarshal JSON: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
-	log.Println("--- Home Assistant Entities ---")
-	for _, s := range states {
-		log.Printf("Entity: %s | State: %s", s.EntityID, s.State)
-	}
-	log.Printf("Total entities discovered: %d", len(states))
-	log.Println("-------------------------------")
+	log.Printf("Discovered %d entities from Home Assistant", len(states))
 
-	return nil
+	return states, nil
 }
