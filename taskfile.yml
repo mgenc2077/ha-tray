@@ -31,10 +31,10 @@ tasks:
       - fyne-cross windows
       - scp fyne-cross/dist/windows-amd64/ha-tray.exe.zip {{.WIN_SERVER}}:{{.REMOTE_PATH}}
       - scp .env {{.WIN_SERVER}}:{{.REMOTE_PATH}}
-      - ssh {{.WIN_SERVER}} "powershell -Command \"Stop-Process -Name ha-tray -ErrorAction SilentlyContinue\""
+      #- ssh {{.WIN_SERVER}} "powershell -Command \"Stop-Process -Name ha-tray -ErrorAction SilentlyContinue\""
       - ssh {{.WIN_SERVER}} "powershell -Command \"Expand-Archive -Path {{.REMOTE_PATH}}ha-tray.exe.zip -DestinationPath {{.REMOTE_PATH}} -Force\""
       - ssh {{.WIN_SERVER}} "powershell -Command \"Remove-Item {{.REMOTE_PATH}}ha-tray.exe.zip\""
       - echo "Deploy Complete"
       - echo "Starting application..."
-      - ssh {{.WIN_SERVER}} "powershell -Command \"Start-Process {{.REMOTE_PATH}}ha-tray.exe\""
+      #- ssh {{.WIN_SERVER}} "powershell -Command \"Start-Process {{.REMOTE_PATH}}ha-tray.exe\""
       - echo "Done"

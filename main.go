@@ -44,6 +44,11 @@ func updateTrayMenu(desk desktop.App, w fyne.Window) {
 		}
 	}
 
+	m.Items = append(m.Items, fyne.NewMenuItemSeparator())
+	m.Items = append(m.Items, fyne.NewMenuItem("Quit", func() {
+		fyne.CurrentApp().Quit()
+	}))
+
 	desk.SetSystemTrayMenu(m)
 }
 
