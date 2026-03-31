@@ -14,13 +14,38 @@ import (
 )
 
 type AppConfig struct {
-	HaURL   string
-	HaToken string
+	HaURL           string
+	HaToken         string
+	EnabledEntities map[string]bool
 }
 
 var config AppConfig
 
+func updateTrayMenu(desk desktop.App, w fyne.Window) {
+	m := fyne.NewMenu("HA Tray",
+		fyne.NewMenuItem("Show", func() {
+			w.Show()
+		}))
+
+	m.Items = append(m.Items, fyne.NewMenuItem("Discovery", func() {
+		_, _ = discovery()
+	}))
+
+	for entityID, enabled := range config.EnabledEntities {
+		if enabled {
+			eID := entityID
+			m.Items = append(m.Items, fyne.NewMenuItem(eID, func() {
+				_ = toggleEntityWs(eID)
+			}))
+		}
+	}
+
+	desk.SetSystemTrayMenu(m)
+}
+
 func main() {
+	config.EnabledEntities = make(map[string]bool)
+
 	a := app.New()
 	w := a.NewWindow("HA Tray")
 	w.Resize(fyne.NewSize(1000, 200))
@@ -34,21 +59,10 @@ func main() {
 	config.HaURL = os.Getenv("haURL")
 	config.HaToken = os.Getenv("haToken")
 
-	if desk, ok := a.(desktop.App); ok {
-		m := fyne.NewMenu("HA Tray",
-			fyne.NewMenuItem("Show", func() {
-				w.Show()
-			}))
-		m.Items = append(m.Items, fyne.NewMenuItem("Office Light", func() {
-			toggleEntity("switch.cata_ct_4010_akilli_priz_socket_1")
-		}))
-		m.Items = append(m.Items, fyne.NewMenuItem("Office Light(ws)", func() {
-			toggleEntityWs("switch.cata_ct_4010_akilli_priz_socket_1")
-		}))
-		m.Items = append(m.Items, fyne.NewMenuItem("Discovery", func() {
-			_, _ = discovery()
-		}))
-		desk.SetSystemTrayMenu(m)
+	var desk desktop.App
+	var okDesk bool
+	if desk, okDesk = a.(desktop.App); okDesk {
+		updateTrayMenu(desk, w)
 	}
 
 	haURLEntry := widget.NewEntry()
@@ -83,17 +97,37 @@ func main() {
 				return len(entities), 3
 			},
 			func() fyne.CanvasObject {
-				return widget.NewLabel("Wide Content Placeholder")
+				return container.NewStack(
+					widget.NewLabel("Wide Content Placeholder"),
+					widget.NewCheck("", nil),
+				)
 			},
 			func(id widget.TableCellID, obj fyne.CanvasObject) {
-				lbl := obj.(*widget.Label)
+				stack := obj.(*fyne.Container)
+				lbl := stack.Objects[0].(*widget.Label)
+				chk := stack.Objects[1].(*widget.Check)
+
 				switch id.Col {
 				case 0:
+					chk.Hide()
+					lbl.Show()
 					lbl.SetText(entities[id.Row].EntityID)
 				case 1:
+					chk.Hide()
+					lbl.Show()
 					lbl.SetText(entities[id.Row].State)
-				default:
-					lbl.SetText("") // "enabled" column placeholder
+				case 2:
+					lbl.Hide()
+					chk.Show()
+					eID := entities[id.Row].EntityID
+					chk.Checked = config.EnabledEntities[eID]
+					chk.OnChanged = func(checked bool) {
+						config.EnabledEntities[eID] = checked
+						if okDesk {
+							updateTrayMenu(desk, w)
+						}
+					}
+					chk.Refresh()
 				}
 			},
 		)
