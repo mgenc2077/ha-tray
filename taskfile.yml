@@ -38,3 +38,14 @@ tasks:
       - echo "Starting application..."
       #- ssh {{.WIN_SERVER}} "powershell -Command \"Start-Process {{.REMOTE_PATH}}ha-tray.exe\""
       - echo "Done"
+
+  deploy-drive:
+    desc: Deploy the application to the Opencloud
+    silent: true
+    cmds:
+      - echo "Building for Windows..."
+      - fyne-cross windows
+      - echo "Deploying to Opencloud Space"
+      - "rclone --config ./rclone.local.conf --no-check-certificate copy ./fyne-cross/bin/windows-amd64/ opencloud-local:"
+      - echo "Deployed..."
+      

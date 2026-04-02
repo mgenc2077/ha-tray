@@ -9,3 +9,9 @@ fyne-cross
 *.exe
 *.exe.zip
 ha-tray
+
+# Rclone
+rclone.local.conf
+
+# Notes
+notes.txt
