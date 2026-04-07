@@ -251,5 +251,5 @@ func main() {
 	w.SetCloseIntercept(func() {
 		w.Hide()
 	})
-	w.ShowAndRun()
+	a.Run()
 }
