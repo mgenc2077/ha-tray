@@ -16,3 +16,6 @@ taskfile2.yml
 
 # Notes
 notes.txt
+
+# Logs
+*.log

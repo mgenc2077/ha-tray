@@ -95,29 +95,25 @@ func (m *winHotkeyManager) listenThread(hotkeyID int, entry *hotkeyEntry) {
 	tidRet, _, _ := procGetCurrentThreadId.Call()
 	entry.threadID = uint32(tidRet)
 
-	var msg struct {
-		HWnd    uintptr
-		Message uint32
-		WParam  uintptr
-		LParam  uintptr
-		Time    uint32
-		Pt      struct{ X, Y int32 }
-	}
+	var msg [48]byte
 
 	for {
 		ret, _, _ := procGetMessage.Call(
-			uintptr(unsafe.Pointer(&msg)),
+			uintptr(unsafe.Pointer(&msg[0])),
 			0, 0, 0,
 		)
 		if ret == 0 || int32(ret) == -1 {
 			return
 		}
 
-		if msg.Message == WM_USER_QUIT {
+		message := *(*uint32)(unsafe.Pointer(&msg[4]))
+		wParam := *(*uintptr)(unsafe.Pointer(&msg[8]))
+
+		if message == WM_USER_QUIT {
 			return
 		}
 
-		if msg.Message == WM_HOTKEY && int(msg.WParam) == hotkeyID {
+		if message == WM_HOTKEY && int(wParam) == hotkeyID {
 			go func(eid string) {
 				_ = toggleEntityWs(eid)
 			}(entry.entityID)

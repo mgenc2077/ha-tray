@@ -3,6 +3,11 @@ package main
 type HotkeyBinding struct {
 	Modifiers []string `json:"modifiers"`
 	Key       string   `json:"key"`
+	Enabled   *bool    `json:"enabled"`
+}
+
+func (h *HotkeyBinding) IsEnabled() bool {
+	return h.Enabled == nil || *h.Enabled
 }
 
 type HotkeyManager interface {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -22,6 +22,8 @@ type AppConfig struct {
 	HaToken         string                    `json:"ha_token"`
 	EnabledEntities map[string]bool           `json:"enabled_entities"`
 	Hotkeys         map[string]*HotkeyBinding `json:"hotkeys"`
+	LogLevel        string                    `json:"log_level"`
+	LogFile         string                    `json:"log_file"`
 }
 
 var config AppConfig
@@ -90,22 +92,25 @@ func updateTrayMenu(desk desktop.App, w fyne.Window, hkManager HotkeyManager) {
 
 func main() {
 	loadConfig()
+	InitLogger(config.LogLevel, config.LogFile)
 
 	if len(os.Args) >= 3 && os.Args[1] == "-trigger" {
 		entityID := os.Args[2]
 		if err := toggleEntityWs(entityID); err != nil {
+			slog.Error("trigger failed", "entity", entityID, "error", err)
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
+		slog.Info("entity toggled", "entity", entityID)
 		fmt.Println("toggled", entityID)
 		os.Exit(0)
 	}
 
 	hkManager := NewHotkeyManager()
 	for entityID, binding := range config.Hotkeys {
-		if config.EnabledEntities[entityID] && binding != nil {
+		if config.EnabledEntities[entityID] && binding != nil && binding.IsEnabled() {
 			if err := hkManager.Register(entityID, binding.Modifiers, binding.Key); err != nil {
-				log.Printf("hotkey register error for %s: %v", entityID, err)
+				slog.Error("hotkey register failed", "entity", entityID, "error", err)
 			}
 		}
 	}
@@ -140,9 +145,7 @@ func main() {
 			config.HaURL = haURLEntry.Text
 			config.HaToken = haTokenEntry.Text
 
-			log.Println("New config:")
-			log.Println("HA URL:", config.HaURL)
-			log.Println("HA Token:", config.HaToken)
+			slog.Info("config updated", "ha_url", config.HaURL, "has_token", config.HaToken != "")
 			saveConfig()
 		})
 	}
@@ -229,7 +232,7 @@ func main() {
 							chk.OnChanged = func(checked bool) {
 								if checked {
 									config.EnabledEntities[eID] = true
-									if binding, ok := config.Hotkeys[eID]; ok && binding != nil {
+									if binding, ok := config.Hotkeys[eID]; ok && binding != nil && binding.IsEnabled() {
 										hkManager.Register(eID, binding.Modifiers, binding.Key)
 									}
 								} else {
@@ -271,7 +274,7 @@ func main() {
 									}
 									hkManager.Unregister(eID)
 									if err := hkManager.Register(eID, mods, key); err != nil {
-										log.Printf("hotkey register error for %s: %v", eID, err)
+										slog.Error("hotkey register failed", "entity", eID, "error", err)
 									}
 									saveConfig()
 								}

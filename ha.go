@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -157,7 +157,7 @@ func discovery() ([]HAEntity, error) {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
-	log.Printf("Discovered %d entities from Home Assistant", len(states))
+	slog.Info("discovery complete", "count", len(states))
 
 	return states, nil
 }
