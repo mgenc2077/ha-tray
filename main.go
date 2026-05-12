@@ -17,9 +17,10 @@ import (
 )
 
 type AppConfig struct {
-	HaURL           string          `json:"ha_url"`
-	HaToken         string          `json:"ha_token"`
-	EnabledEntities map[string]bool `json:"enabled_entities"`
+	HaURL           string                    `json:"ha_url"`
+	HaToken         string                    `json:"ha_token"`
+	EnabledEntities map[string]bool           `json:"enabled_entities"`
+	Hotkeys         map[string]*HotkeyBinding `json:"hotkeys"`
 }
 
 var config AppConfig
@@ -44,6 +45,9 @@ func loadConfig() {
 	if config.EnabledEntities == nil {
 		config.EnabledEntities = make(map[string]bool)
 	}
+	if config.Hotkeys == nil {
+		config.Hotkeys = make(map[string]*HotkeyBinding)
+	}
 }
 
 func saveConfig() {
@@ -53,7 +57,7 @@ func saveConfig() {
 	}
 }
 
-func updateTrayMenu(desk desktop.App, w fyne.Window) {
+func updateTrayMenu(desk desktop.App, w fyne.Window, hkManager HotkeyManager) {
 	m := fyne.NewMenu("HA Tray",
 		fyne.NewMenuItem("Show", func() {
 			w.Show()
@@ -76,6 +80,7 @@ func updateTrayMenu(desk desktop.App, w fyne.Window) {
 
 	m.Items = append(m.Items, fyne.NewMenuItemSeparator())
 	m.Items = append(m.Items, fyne.NewMenuItem("Quit", func() {
+		hkManager.UnregisterAll()
 		fyne.CurrentApp().Quit()
 	}))
 
@@ -85,6 +90,15 @@ func updateTrayMenu(desk desktop.App, w fyne.Window) {
 func main() {
 	loadConfig()
 
+	hkManager := NewHotkeyManager()
+	for entityID, binding := range config.Hotkeys {
+		if config.EnabledEntities[entityID] && binding != nil {
+			if err := hkManager.Register(entityID, binding.Modifiers, binding.Key); err != nil {
+				log.Printf("hotkey register error for %s: %v", entityID, err)
+			}
+		}
+	}
+
 	a := app.New()
 	w := a.NewWindow("HA Tray")
 	w.Resize(fyne.NewSize(1000, 200))
@@ -92,7 +106,7 @@ func main() {
 	var desk desktop.App
 	var okDesk bool
 	if desk, okDesk = a.(desktop.App); okDesk {
-		updateTrayMenu(desk, w)
+		updateTrayMenu(desk, w, hkManager)
 	}
 
 	haURLEntry := widget.NewEntry()
@@ -169,45 +183,91 @@ func main() {
 			fyne.Do(func() {
 				table := widget.NewTable(
 					func() (int, int) {
-						return len(entities), 3
+						return len(entities), 4
 					},
 					func() fyne.CanvasObject {
 						return container.NewStack(
 							widget.NewLabel("Wide Content Placeholder"),
 							widget.NewCheck("", nil),
+							widget.NewEntry(),
 						)
 					},
 					func(id widget.TableCellID, obj fyne.CanvasObject) {
 						stack := obj.(*fyne.Container)
 						lbl := stack.Objects[0].(*widget.Label)
 						chk := stack.Objects[1].(*widget.Check)
+						entry := stack.Objects[2].(*widget.Entry)
 
 						switch id.Col {
 						case 0:
 							chk.Hide()
+							entry.Hide()
 							lbl.Show()
 							lbl.SetText(entities[id.Row].EntityID)
 						case 1:
 							chk.Hide()
+							entry.Hide()
 							lbl.Show()
 							lbl.SetText(entities[id.Row].State)
 						case 2:
 							lbl.Hide()
+							entry.Hide()
 							chk.Show()
 							eID := entities[id.Row].EntityID
 							chk.Checked = config.EnabledEntities[eID]
 							chk.OnChanged = func(checked bool) {
 								if checked {
 									config.EnabledEntities[eID] = true
+									if binding, ok := config.Hotkeys[eID]; ok && binding != nil {
+										hkManager.Register(eID, binding.Modifiers, binding.Key)
+									}
 								} else {
 									delete(config.EnabledEntities, eID)
+									hkManager.Unregister(eID)
 								}
 								saveConfig()
 								if okDesk {
-									updateTrayMenu(desk, w)
+									updateTrayMenu(desk, w, hkManager)
 								}
 							}
 							chk.Refresh()
+						case 3:
+							lbl.Hide()
+							chk.Hide()
+							entry.Show()
+							eID := entities[id.Row].EntityID
+							if hkManager.Supported() {
+								if b, ok := config.Hotkeys[eID]; ok && b != nil {
+									entry.SetText(FormatHotkeyBinding(b))
+								} else {
+									entry.SetText("")
+								}
+								entry.SetPlaceHolder("Ctrl+Alt+K")
+								entry.OnChanged = func(text string) {
+									if text == "" {
+										delete(config.Hotkeys, eID)
+										hkManager.Unregister(eID)
+										saveConfig()
+										return
+									}
+									mods, key, ok := ParseHotkeyString(text)
+									if !ok {
+										return
+									}
+									config.Hotkeys[eID] = &HotkeyBinding{
+										Modifiers: mods,
+										Key:       key,
+									}
+									hkManager.Unregister(eID)
+									if err := hkManager.Register(eID, mods, key); err != nil {
+										log.Printf("hotkey register error for %s: %v", eID, err)
+									}
+									saveConfig()
+								}
+							} else {
+								entry.SetText("N/A")
+								entry.Disable()
+							}
 						}
 					},
 				)
@@ -225,6 +285,8 @@ func main() {
 						lbl.SetText("State")
 					case 2:
 						lbl.SetText("Enabled")
+					case 3:
+						lbl.SetText("Hotkey")
 					default:
 						lbl.SetText("")
 					}
@@ -235,6 +297,7 @@ func main() {
 				table.SetColumnWidth(0, 400)
 				table.SetColumnWidth(1, 300)
 				table.SetColumnWidth(2, 50)
+				table.SetColumnWidth(3, 120)
 
 				tableContainer := container.NewGridWrap(fyne.NewSize(800, 600), table)
 
