@@ -31,7 +31,7 @@ jobs:
         run: fyne package -os linux -icon Icon.png -release
 
       - name: Rename artifact
-        run: mv *.tar.gz ha-tray-linux-amd64.tar.gz
+        run: mv *.tar.* ha-tray-linux-amd64.tar.gz
 
       - uses: actions/upload-artifact@v7
         with:
