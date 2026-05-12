@@ -1,0 +1,76 @@
+name: Build Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends \
+            gcc libgl1-mesa-dev libwayland-dev libx11-dev \
+            libxkbcommon-dev xorg-dev
+
+      - name: Install Fyne CLI
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Build
+        run: fyne package -os linux -icon Icon.png -release
+
+      - name: Rename artifact
+        run: mv ha-tray.tar.gz ha-tray-linux-amd64.tar.gz
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ha-tray-linux-amd64
+          path: ha-tray-linux-amd64.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install Fyne CLI
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+      - name: Build
+        run: fyne package -os windows -icon Icon.png -release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ha-tray-windows-amd64
+          path: ha-tray.exe
+
+  release:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/ha-tray-linux-amd64/*
+            artifacts/ha-tray-windows-amd64/*
