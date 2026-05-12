@@ -29,6 +29,8 @@ Task runner is [Taskfile](https://taskfile.dev/) (`task`):
 
 Standard Go tooling also works: `go build .`, `go vet ./...`
 
+The app also supports a headless CLI mode: `ha-tray -trigger <entity_id>` toggles an entity via the WebSocket API and exits immediately. No display server needed. This is the Linux alternative to global hotkeys — users bind it as a custom keyboard shortcut in their desktop environment.
+
 ## Important constraints
 
 - **Fyne requires a display server.** The app cannot run headless — it opens a GUI window and registers a system tray icon. Testing changes requires a desktop environment.

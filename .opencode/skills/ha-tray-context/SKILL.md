@@ -155,6 +155,14 @@ Flow:
 4. Enable/disable checkbox also registers/unregisters the hotkey
 5. On quit, `UnregisterAll()` cleans up
 
+### CLI trigger mode (`-trigger` flag)
+
+`ha-tray -trigger <entity_id>` toggles an entity and exits — no GUI, no display server.
+
+Parsed at the top of `main()` before `app.New()`. Loads `config.json`, calls `toggleEntityWs()`, prints result, `os.Exit()`. Fyne never initializes.
+
+On Linux this replaces global hotkeys — users bind `ha-tray -trigger <entity>` as a custom keyboard shortcut in their desktop environment (GNOME, KDE, etc).
+
 ## Build and deploy
 
 - `task run` — `go run .` (requires display server — Fyne opens a GUI window)

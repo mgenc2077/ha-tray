@@ -87,6 +87,24 @@ Hotkeys are supported on **Windows only**. On Linux and macOS the hotkey column 
 
 Format: `Ctrl+Alt+L`, `Ctrl+Shift+F5`, etc. At least one modifier is required.
 
+### CLI Trigger (Linux hotkey alternative)
+
+The `-trigger` flag toggles an entity and exits immediately — no GUI, no display server needed. This is the recommended way to bind hotkeys on Linux:
+
+```bash
+ha-tray -trigger switch.living_room
+```
+
+Bind it in your desktop environment's keyboard shortcuts (e.g. GNOME Settings → Keyboard → Custom Shortcuts):
+
+```
+Name:     Toggle Living Room
+Command:  /path/to/ha-tray -trigger switch.living_room
+Shortcut: Ctrl+Alt+L
+```
+
+Exit code 0 on success, 1 on failure. Prints `toggled <entity>` to stdout or an error message to stderr.
+
 ## Cross-Compilation (Windows from Linux)
 
 Uses [fyne-cross](https://github.com/fyne-io/fyne-cross) with Docker:

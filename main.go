@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -89,6 +90,16 @@ func updateTrayMenu(desk desktop.App, w fyne.Window, hkManager HotkeyManager) {
 
 func main() {
 	loadConfig()
+
+	if len(os.Args) >= 3 && os.Args[1] == "-trigger" {
+		entityID := os.Args[2]
+		if err := toggleEntityWs(entityID); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("toggled", entityID)
+		os.Exit(0)
+	}
 
 	hkManager := NewHotkeyManager()
 	for entityID, binding := range config.Hotkeys {
