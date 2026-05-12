@@ -10,8 +10,9 @@ fyne-cross
 *.exe.zip
 ha-tray
 
-# Rclone
+# Rclone deploy
 rclone.local.conf
+taskfile2.yml
 
 # Notes
 notes.txt
