@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -208,79 +207,79 @@ func parseVirtualKey(key string) (uint32, error) {
 	case "9":
 		return 0x39, nil
 	case "f1":
-		return syscall.VK_F1, nil
+		return 0x70, nil
 	case "f2":
-		return syscall.VK_F2, nil
+		return 0x71, nil
 	case "f3":
-		return syscall.VK_F3, nil
+		return 0x72, nil
 	case "f4":
-		return syscall.VK_F4, nil
+		return 0x73, nil
 	case "f5":
-		return syscall.VK_F5, nil
+		return 0x74, nil
 	case "f6":
-		return syscall.VK_F6, nil
+		return 0x75, nil
 	case "f7":
-		return syscall.VK_F7, nil
+		return 0x76, nil
 	case "f8":
-		return syscall.VK_F8, nil
+		return 0x77, nil
 	case "f9":
-		return syscall.VK_F9, nil
+		return 0x78, nil
 	case "f10":
-		return syscall.VK_F10, nil
+		return 0x79, nil
 	case "f11":
-		return syscall.VK_F11, nil
+		return 0x7A, nil
 	case "f12":
-		return syscall.VK_F12, nil
+		return 0x7B, nil
 	case "escape", "esc":
-		return syscall.VK_ESCAPE, nil
+		return 0x1B, nil
 	case "tab":
-		return syscall.VK_TAB, nil
+		return 0x09, nil
 	case "enter", "return":
-		return syscall.VK_RETURN, nil
+		return 0x0D, nil
 	case "space":
-		return syscall.VK_SPACE, nil
+		return 0x20, nil
 	case "backspace":
-		return syscall.VK_BACK, nil
+		return 0x08, nil
 	case "insert":
-		return syscall.VK_INSERT, nil
+		return 0x2D, nil
 	case "delete", "del":
-		return syscall.VK_DELETE, nil
+		return 0x2E, nil
 	case "home":
-		return syscall.VK_HOME, nil
+		return 0x24, nil
 	case "end":
-		return syscall.VK_END, nil
+		return 0x23, nil
 	case "pageup":
-		return syscall.VK_PRIOR, nil
+		return 0x21, nil
 	case "pagedown":
-		return syscall.VK_NEXT, nil
+		return 0x22, nil
 	case "up":
-		return syscall.VK_UP, nil
+		return 0x26, nil
 	case "down":
-		return syscall.VK_DOWN, nil
+		return 0x28, nil
 	case "left":
-		return syscall.VK_LEFT, nil
+		return 0x25, nil
 	case "right":
-		return syscall.VK_RIGHT, nil
+		return 0x27, nil
 	case "numpad0":
-		return syscall.VK_NUMPAD0, nil
+		return 0x60, nil
 	case "numpad1":
-		return syscall.VK_NUMPAD1, nil
+		return 0x61, nil
 	case "numpad2":
-		return syscall.VK_NUMPAD2, nil
+		return 0x62, nil
 	case "numpad3":
-		return syscall.VK_NUMPAD3, nil
+		return 0x63, nil
 	case "numpad4":
-		return syscall.VK_NUMPAD4, nil
+		return 0x64, nil
 	case "numpad5":
-		return syscall.VK_NUMPAD5, nil
+		return 0x65, nil
 	case "numpad6":
-		return syscall.VK_NUMPAD6, nil
+		return 0x66, nil
 	case "numpad7":
-		return syscall.VK_NUMPAD7, nil
+		return 0x67, nil
 	case "numpad8":
-		return syscall.VK_NUMPAD8, nil
+		return 0x68, nil
 	case "numpad9":
-		return syscall.VK_NUMPAD9, nil
+		return 0x69, nil
 	}
 	return 0, fmt.Errorf("unsupported key: %s", key)
 }
