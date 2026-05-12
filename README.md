@@ -4,6 +4,8 @@ A cross-platform native system tray application for toggling Home Assistant enti
 
 ![Settings](screenshots/SettingsMenu.png)
 
+![Devices](screenshots/DevicesMenu.png)
+
 ## Features
 
 - System tray icon with per-entity toggle menu

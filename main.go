@@ -112,7 +112,7 @@ func main() {
 
 	a := app.New()
 	w := a.NewWindow("HA Tray")
-	w.Resize(fyne.NewSize(1000, 200))
+	w.Resize(fyne.NewSize(500, 120))
 
 	var desk desktop.App
 	var okDesk bool
@@ -304,13 +304,13 @@ func main() {
 				}
 
 				originalSize := w.Canvas().Size()
-				w.Resize(fyne.NewSize(1000, 800))
-				table.SetColumnWidth(0, 400)
-				table.SetColumnWidth(1, 300)
-				table.SetColumnWidth(2, 50)
+				w.Resize(fyne.NewSize(1200, 800))
+				table.SetColumnWidth(0, 500)
+				table.SetColumnWidth(1, 400)
+				table.SetColumnWidth(2, 100)
 				table.SetColumnWidth(3, 120)
 
-				tableContainer := container.NewGridWrap(fyne.NewSize(800, 600), table)
+				tableContainer := container.NewGridWrap(fyne.NewSize(1100, 600), table)
 
 				d := dialog.NewCustom("Discovered Devices", "Close", tableContainer, w)
 				d.SetOnClosed(func() {
