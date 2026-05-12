@@ -13,8 +13,9 @@ Single `package main` Go app (Go 1.24). Source files:
 - **`hotkey_windows.go`** — Win32 `RegisterHotKey`/`UnregisterHotKey` implementation (pure Go via `golang.org/x/sys/windows`)
 - **`hotkey_linux.go`** — No-op stub (`Supported() = false`)
 - **`hotkey_darwin.go`** — No-op stub (`Supported() = false`)
+- **`logger.go`** — `InitLogger()` sets up `slog.JSONHandler` writing to configured log file. Log level and file path from config. Defaults: `info` level, `ha-tray.log`.
 
-Runtime state: `config.json` (gitignored, auto-created) holds `ha_url`, `ha_token`, `enabled_entities`, `hotkeys`. `.env` (gitignored) is an alternative source for `haURL`/`haToken` env vars via `godotenv`. `loadConfig()` reads `.env` first, then `config.json` overrides.
+Runtime state: `config.json` (gitignored, auto-created) holds `ha_url`, `ha_token`, `enabled_entities`, `hotkeys`, `log_level`, `log_file`. `.env` (gitignored) is an alternative source for `haURL`/`haToken` env vars via `godotenv`. `loadConfig()` reads `.env` first, then `config.json` overrides.
 
 ## Fyne v2 patterns used in this project
 
@@ -127,13 +128,18 @@ Headers require separate `CreateHeader` / `UpdateHeader` callbacks. Column width
 type HotkeyBinding struct {
     Modifiers []string `json:"modifiers"` // e.g. ["ctrl", "alt"]
     Key       string   `json:"key"`       // e.g. "l"
+    Enabled   *bool    `json:"enabled"`   // nil = true, explicit false disables
 }
+
+func (h *HotkeyBinding) IsEnabled() bool { return h.Enabled == nil || *h.Enabled }
 
 type AppConfig struct {
     HaURL           string                    `json:"ha_url"`
     HaToken         string                    `json:"ha_token"`
     EnabledEntities map[string]bool           `json:"enabled_entities"`
-    Hotkeys         map[string]*HotkeyBinding `json:"hotkeys"` // entity_id → binding
+    Hotkeys         map[string]*HotkeyBinding `json:"hotkeys"`  // entity_id → binding
+    LogLevel        string                    `json:"log_level"` // debug|info|warn|error, default info
+    LogFile         string                    `json:"log_file"`  // default ha-tray.log
 }
 ```
 
@@ -149,11 +155,19 @@ Platform-specific via build tags. `HotkeyManager` interface in `hotkey.go`:
 Hotkey text format: `Ctrl+Alt+L` — parsed by `ParseHotkeyString()` in `hotkey.go`. Requires at least one modifier + one key.
 
 Flow:
-1. On startup, all saved hotkeys for enabled entities are registered
+1. On startup, all saved hotkeys for enabled entities (where `IsEnabled() == true`) are registered
 2. User types combo in discovery table column 3 → validated → saved → registered
 3. Empty entry clears the hotkey
 4. Enable/disable checkbox also registers/unregisters the hotkey
 5. On quit, `UnregisterAll()` cleans up
+
+### Logging (`logger.go`)
+
+`InitLogger(level, filePath)` called after `loadConfig()` in `main()`. Uses `slog.JSONHandler` writing to a log file (append mode). Sets the logger as `slog.Default()` so all `slog.Info/Error/Debug/Warn` calls go to the file.
+
+All `log.*` calls have been replaced with `slog.*`. The HA token is never logged — only `"has_token": bool`.
+
+The `-trigger` CLI mode also initializes the logger and writes to the same file.
 
 ### CLI trigger mode (`-trigger` flag)
 

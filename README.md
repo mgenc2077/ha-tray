@@ -20,7 +20,9 @@ A cross-platform native system tray application for toggling Home Assistant enti
 - **[Fyne](https://fyne.io/) v2** — cross-platform GUI framework (system tray, tables, dialogs)
 - **[gorilla/websocket](https://github.com/gorilla/websocket)** — HA WebSocket API client
 - **[godotenv](https://github.com/joho/godotenv)** — `.env` file loading
+- `logger.go` — structured JSON logging via `log/slog`
 - **[golang.org/x/sys](https://pkg.go.dev/golang.org/x/sys)** — Win32 syscall wrappers for global hotkeys
+- **[log/slog](https://pkg.go.dev/log/slog)** — structured JSON file logging (stdlib)
 
 ## Prerequisites
 
@@ -78,8 +80,15 @@ Both files are gitignored and contain credentials.
     "switch.living_room": {
       "modifiers": ["ctrl", "alt"],
       "key": "l"
+    },
+    "switch.bedroom": {
+      "modifiers": ["ctrl", "alt"],
+      "key": "b",
+      "enabled": false
     }
-  }
+  },
+  "log_level": "info",
+  "log_file": "ha-tray.log"
 }
 ```
 
@@ -88,6 +97,19 @@ Both files are gitignored and contain credentials.
 Hotkeys are supported on **Windows only**. On Linux and macOS the hotkey column shows "N/A".
 
 Format: `Ctrl+Alt+L`, `Ctrl+Shift+F5`, etc. At least one modifier is required.
+
+Set `"enabled": false` on a hotkey binding to disable it without deleting the configuration. Omitting `enabled` defaults to `true`.
+
+### Logging
+
+All application events are written to a structured JSON log file. Configure in `config.json`:
+
+| Field | Values | Default |
+|---|---|---|
+| `log_level` | `debug`, `info`, `warn`, `error` | `info` |
+| `log_file` | file path (relative to working dir) | `ha-tray.log` |
+
+Log files are gitignored (`*.log`).
 
 ### CLI Trigger (Linux hotkey alternative)
 

@@ -15,7 +15,7 @@ rclone.local.conf
 taskfile2.yml
 
 # Notes
-notes.txt
+notes.md
 
 # Logs
 *.log

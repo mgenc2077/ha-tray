@@ -11,7 +11,8 @@ Single-package Go system tray app for toggling Home Assistant entities. Built wi
 - `hotkey.go` — `HotkeyManager` interface, hotkey string parsing/formatting
 - `hotkey_windows.go` — Win32 global hotkey implementation (pure Go)
 - `hotkey_linux.go` / `hotkey_darwin.go` — No-op stubs (hotkeys not supported)
-- `config.json` — runtime config (HA URL, token, enabled entities, hotkey bindings). Gitignored; auto-created on first run
+- `logger.go` — structured JSON file logging via `log/slog`
+- `config.json` — runtime config (HA URL, token, enabled entities, hotkey bindings, log settings). Gitignored; auto-created on first run
 - `.env` — alternative source for `haURL` / `haToken` env vars. Gitignored
 
 All code is in `package main`. No internal packages or libraries. Platform-specific code uses Go build tags (`//go:build windows`, etc.).
