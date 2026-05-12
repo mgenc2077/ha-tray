@@ -25,7 +25,7 @@ jobs:
             libxkbcommon-dev xorg-dev
 
       - name: Install Fyne CLI
-        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+        run: go install fyne.io/tools/cmd/fyne@latest
 
       - name: Build
         run: fyne package -os linux -icon Icon.png -release
@@ -48,7 +48,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Install Fyne CLI
-        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+        run: go install fyne.io/tools/cmd/fyne@latest
 
       - name: Build
         run: fyne package -os windows -icon Icon.png -release
