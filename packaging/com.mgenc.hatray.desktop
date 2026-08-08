@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=HA Tray
+GenericName=Home Assistant Tray
+Comment=Toggle Home Assistant entities from the system tray
+Exec=ha-tray
+Icon=com.mgenc.hatray
+Terminal=false
+Categories=Utility;
+Keywords=home assistant;smart home;tray;
+StartupNotify=false

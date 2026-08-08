@@ -3,11 +3,17 @@ package main
 import (
 	"log/slog"
 	"os"
+	"path/filepath"
 )
 
 func InitLogger(level string, filePath string) *slog.Logger {
-	if filePath == "" {
-		filePath = "ha-tray.log"
+	filePath = logPath(filePath)
+
+	if dir := filepath.Dir(filePath); dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			slog.Error("failed to create log dir, falling back to stderr", "error", err, "path", dir)
+			return slog.Default()
+		}
 	}
 
 	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)

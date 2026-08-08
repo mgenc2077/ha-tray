@@ -1,0 +1,41 @@
+# Maintainer: Mustafa Genc <dev@wedo.com.tr>
+
+pkgname=ha-tray
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="System tray app for toggling Home Assistant entities"
+arch=('x86_64')
+url="https://github.com/mgenc2077/ha-tray"
+license=('GPL-3.0-or-later')
+# glfw links libGL/libX11 directly and dlopens the X extensions at runtime, so
+# ldd alone under-reports these. X11-only build (no wayland build tag); on a
+# Wayland session it runs through XWayland.
+depends=('libgl' 'libx11' 'libxcursor' 'libxi' 'libxinerama' 'libxrandr'
+         'libxxf86vm')
+makedepends=('go')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname-$pkgver"
+
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CXXFLAGS="${CXXFLAGS}"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+
+  go build -o "$pkgname" .
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+
+  install -Dm755 "$pkgname" "$pkgdir/usr/bin/$pkgname"
+  install -Dm644 packaging/com.mgenc.hatray.desktop \
+    "$pkgdir/usr/share/applications/com.mgenc.hatray.desktop"
+  install -Dm644 Icon.png \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/com.mgenc.hatray.png"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

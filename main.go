@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -29,6 +30,7 @@ type AppConfig struct {
 var config AppConfig
 
 func loadConfig() {
+	resolvePaths()
 	config.EnabledEntities = make(map[string]bool)
 
 	_ = godotenv.Load()
@@ -39,7 +41,7 @@ func loadConfig() {
 		config.HaToken = envToken
 	}
 
-	data, err := os.ReadFile("config.json")
+	data, err := os.ReadFile(cfgPath)
 	if err == nil {
 		_ = json.Unmarshal(data, &config)
 	} else if os.IsNotExist(err) {
@@ -55,8 +57,18 @@ func loadConfig() {
 
 func saveConfig() {
 	data, err := json.MarshalIndent(config, "", "  ")
-	if err == nil {
-		os.WriteFile("config.json", data, 0644)
+	if err != nil {
+		slog.Error("config marshal failed", "error", err)
+		return
+	}
+	if dir := filepath.Dir(cfgPath); dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			slog.Error("config dir create failed", "path", dir, "error", err)
+			return
+		}
+	}
+	if err := os.WriteFile(cfgPath, data, 0644); err != nil {
+		slog.Error("config save failed", "path", cfgPath, "error", err)
 	}
 }
 
